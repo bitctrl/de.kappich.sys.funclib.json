@@ -489,6 +489,8 @@ public class Json {
 	Object readValue(final JsonReader data, @Nullable Type resultHint) throws JsonException {
 		char s = peek(data);
 		switch(s) {
+			case '\0':
+				throw new JsonParseException(resultHint == null ? "Json-Element" : resultHint.getTypeName(), data);
 			case '"':
 				return readString(data);
 			case '{':
@@ -511,7 +513,14 @@ public class Json {
 			case 'n':
 				return readConstant(data, "null", null);
 			default:
-				return readNumber(data);
+				try {
+					return readNumber(data);
+				}
+				catch(JsonParseException e){
+					JsonParseException exception = new JsonParseException(resultHint == null ? "Json-Element" : resultHint.getTypeName(), data);
+					exception.addSuppressed(e);
+					throw exception;
+				}
 		}
 	}
 
@@ -538,11 +547,11 @@ public class Json {
 	private List<Object> readArray(final JsonReader data, @Nullable final Class<?> resultHint) throws JsonException {
 		final List<Object> result = new ArrayList<Object>();
 		read(data, '[');
+		if(peek(data) == ']') {
+			read(data, ']');
+			return result;
+		}
 		while(true) {
-			if(peek(data) == ']') {
-				read(data, ']');
-				break;
-			}
 			Object value = readValue(data, resultHint);
 			result.add(value);
 			char c = read(data, ',', ']');
@@ -677,7 +686,7 @@ public class Json {
 		int c;
 		while(true) {
 			c = data.read();
-			if(c > ' ') {
+			if(c > ' ' || c == 0) {
 				break;
 			}
 		}
@@ -700,7 +709,10 @@ public class Json {
 					return;
 				}
 			}
-			if(c <= 0) throw new JsonParseException(new String(expected), data);
+			if(c == 0) {
+				data.skip(-result.length() - 1);
+				throw new JsonParseException(new String(expected), data);
+			}
 			result.append((char) c);
 		}
 	}

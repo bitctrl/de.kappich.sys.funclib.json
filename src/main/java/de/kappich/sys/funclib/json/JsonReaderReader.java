@@ -46,7 +46,7 @@ public class JsonReaderReader extends JsonReader {
 	@Override
 	char readChar() {
 		while(_cache.length() <= _pos){
-			int read = 0;
+			int read;
 			try {
 				read = _reader.read();
 			}

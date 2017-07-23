@@ -160,8 +160,12 @@ public final class JsonObject extends AbstractMap<String, Object> {
 	
 	@Nullable
 	public <T> List<T> getList(final String key, final Class<T> clazz) throws JsonException {
-		List<?> list = getObject(key, List.class);
-		if(list == null) return null;
+		Object value = get(key);
+		if(value == null) return null;
+		if(!(value instanceof List)){
+			throw new JsonException("Element \"" + key + "\" ist kein Array: " + value);
+		}
+		List<?> list = (List<?>) value;
 		final List<T> result = new ArrayList<T>(list.size());
 		for(Object o : list) {
 			result.add(_json.proxy(clazz, o));
